@@ -3,7 +3,7 @@ program heat
     integer, parameter              :: dp = selected_real_kind(15, 300)
 
         ! Inputs and Error Checking
-    character(len=1)                :: YN
+    character(len=1)                :: u_input
     integer                         :: ierr
     character(len=50)               :: errmsg
     
@@ -15,6 +15,13 @@ program heat
         ! Time stores
     real(kind = dp)                 :: dt, t, target_t
 
+        ! Step matrix
+    real(kind = dp), allocatable    :: mat(:,:)
+    real(kind = dp)                 :: alpha, lambda
+
+        ! Loop counter
+    integer                         :: count
+
         ! #######################
         ! # Initialising Arrays #
         ! #######################
@@ -22,8 +29,8 @@ program heat
         ! System state array (real(kind=dp))
     do
         write(*,*) "Would you like to adjust the size of the state array? Default is 100 positions over 0.5m"
-        read(*,'(A)', iostat = ierr, iomsg = errmsg) YN
-        if ((ierr .eq. 0) .and. (index('yY', YN) .ne. 0)) then
+        read(*,'(A)', iostat = ierr, iomsg = errmsg) u_input
+        if ((ierr .eq. 0) .and. (index('yY', u_input) .ne. 0)) then
 
                 ! Index count input
             do
@@ -31,6 +38,7 @@ program heat
                 read(*,'(I10)', iostat = ierr, iomsg = errmsg) size
                 if (ierr .eq. 0) then
                     allocate(u(size))
+                    allocate(mat(size, size))
                     u = 0
                     exit
                 end if
@@ -50,18 +58,19 @@ program heat
                 write(*,*) "Please enter a float"
             end do
             exit
-        else if ((ierr .eq. 0) .and. (index('nN', YN) .ne. 0)) then
+        else if ((ierr .eq. 0) .and. (index('nN', u_input) .ne. 0)) then
 
                 ! Default values
             size = 100
             allocate(u(size))
+            allocate(mat(size, size))
             u = 0
             width = 0.5_dp
             dx = width/real(size, kind = dp)
             exit
         end if
         write(*,*) trim(errmsg)
-        write(*,*) "Please return Y/N"
+        write(*,*) "Please enter Y/N"
     end do
 
         ! Start at time 0
@@ -70,8 +79,8 @@ program heat
         write(*,*) "Would you like to adjust the timestep and target time? Default is a step of 0.01 seconds,&
             ! Line truncated
         & with a final time of 10s"
-        read(*,'(A)', iostat = ierr, iomsg = errmsg) YN
-        if ((ierr .eq. 0) .and. (index('yY', YN) .ne. 0)) then
+        read(*,'(A)', iostat = ierr, iomsg = errmsg) u_input
+        if ((ierr .eq. 0) .and. (index('yY', u_input) .ne. 0)) then
 
                 ! Timestep input
             do
@@ -91,14 +100,89 @@ program heat
                 write(*,*) "Please enter a float"
             end do
             exit
-        else if ((ierr .eq. 0) .and. (index('nN', YN) .ne. 0)) then
+        else if ((ierr .eq. 0) .and. (index('Nn', u_input) .ne. 0)) then
 
                 ! Default values
             dt = 0.01_dp
             target_t = 10.0_dp
+            exit
         end if
         write(*,*) "Please return Y/N"
     end do
 
+    do
+        write(*,*) "Would you like to adjust the thermal permittivity of the system? Default is 0.2"
+        read(*,'(A)', iostat = ierr, iomsg = errmsg) u_input
+        if ((ierr .eq. 0) .and. (index('Yy', u_input) .ne. 0)) then
+            do
+                read(*,'(F10.10)', iostat = ierr, iomsg = errmsg) alpha
+                if ((ierr .eq. 0) .and. (alpha .le. 1.0_dp) .and. (alpha .ge. 0)) exit
+                write(*,*) trim(errmsg)
+                write(*,*) "Please enter a float between 0 and 1"
+            end do
+            exit
+        else if ((ierr .eq. 0) .and. (index('Nn', u_input) .ne. 0)) then
+            alpha = 0.2_dp
+            exit
+        end if
+        write(*,*) trim(errmsg)
+        write(*,*) "Please return Y/N"
+    end do
+    lambda = alpha * dt / (dx*2.0_dp)
 
+        ! Set up timestep matrix
+    do
+        write(*,*) "Would you like FTCS or BTCS?"
+        read(*,'(A)', iostat = ierr, iomsg = errmsg) u_input
+        if ((ierr .eq. 0) .and. (index('FfBb', u_input) .ne. 0)) exit
+        write(*,*) "Please enter FTCS or BTCS"
+    end do
+        ! Forwards time-step
+    if (index('Ff', u_input) .ne. 0) then
+
+            ! First column
+        mat(1, 1) = 1.0_dp - (2.0_dp * lambda)
+        mat(2, 1) = lambda
+        mat(size, 1) = lambda
+
+            ! Central diagonal
+        count = 2
+        do
+            mat(count-1, count) = lambda
+            mat(count, count) = 1.0_dp - (2.0_dp * lambda)
+            mat(count+1, count) = lambda
+
+            count = count + 1
+            if (count .ge. size-1) exit
+        end do
+
+            ! Last column
+        mat(1, count) = lambda
+        mat(count-1, count) = lambda
+        mat(count, count) = 1.0_dp - (2.0_dp * lambda)
+
+        ! Backwards time-step
+    else if (index('Bb', u_input) .ne. 0) then
+
+                    ! First column
+        mat(1, 1) = 1.0_dp + (2.0_dp * lambda)
+        mat(2, 1) = -1.0_dp * lambda
+        mat(size, 1) = -1.0_dp * lambda
+
+            ! Central diagonal
+        count = 2
+        do
+            mat(count-1, count) = -1.0_dp * lambda
+            mat(count, count) = 1.0_dp + (2.0_dp * lambda)
+            mat(count+1, count) = -1.0_dp + lambda
+
+            count = count + 1
+            if (count .ge. size-1) exit
+        end do
+
+            ! Last column
+        mat(1, count) = -1.0_dp * lambda
+        mat(count-1, count) = -1.0_dp * lambda
+        mat(count, count) = 1.0_dp + (2.0_dp * lambda)
+    end if
 end program
