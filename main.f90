@@ -9,7 +9,7 @@ program heat
     
         ! State array
     real(kind = dp), allocatable    :: u(:)
-    integer                         :: size
+    integer                         :: len
     real(kind = dp)                 :: width, dx
 
         ! Time stores
@@ -35,10 +35,10 @@ program heat
                 ! Index count input
             do
                 write(*,*) "How many indices should the state array contain?"
-                read(*,'(I10)', iostat = ierr, iomsg = errmsg) size
+                read(*,'(I10)', iostat = ierr, iomsg = errmsg) len
                 if (ierr .eq. 0) then
-                    allocate(u(size))
-                    allocate(mat(size, size))
+                    allocate(u(len))
+                    allocate(mat(len, len))
                     u = 0
                     exit
                 end if
@@ -51,7 +51,7 @@ program heat
                 write(*,*) "How long should the state array be (in metres)?"
                 read(*,'(F10.10)', iostat = ierr, iomsg = errmsg) width
                 if (ierr .eq. 0) then
-                    dx = width/real(size, kind = dp)
+                    dx = width/real(len, kind = dp)
                     exit
                 end if
                 write(*,*) trim(errmsg)
@@ -61,12 +61,12 @@ program heat
         else if ((ierr .eq. 0) .and. (index('nN', u_input) .ne. 0)) then
 
                 ! Default values
-            size = 100
-            allocate(u(size))
-            allocate(mat(size, size))
+            len = 5
+            allocate(u(len))
+            allocate(mat(len, len))
             u = 0
             width = 0.5_dp
-            dx = width/real(size, kind = dp)
+            dx = width/real(len, kind = dp)
             exit
         end if
         write(*,*) trim(errmsg)
@@ -115,6 +115,7 @@ program heat
         read(*,'(A)', iostat = ierr, iomsg = errmsg) u_input
         if ((ierr .eq. 0) .and. (index('Yy', u_input) .ne. 0)) then
             do
+                write(*,*) "What would you like the permittivity to be?"
                 read(*,'(F10.10)', iostat = ierr, iomsg = errmsg) alpha
                 if ((ierr .eq. 0) .and. (alpha .le. 1.0_dp) .and. (alpha .ge. 0)) exit
                 write(*,*) trim(errmsg)
@@ -143,7 +144,7 @@ program heat
             ! First column
         mat(1, 1) = 1.0_dp - (2.0_dp * lambda)
         mat(2, 1) = lambda
-        mat(size, 1) = lambda
+        mat(len, 1) = lambda
 
             ! Central diagonal
         count = 2
@@ -153,7 +154,7 @@ program heat
             mat(count+1, count) = lambda
 
             count = count + 1
-            if (count .ge. size-1) exit
+            if (count .ge. len-1) exit
         end do
 
             ! Last column
@@ -167,7 +168,7 @@ program heat
                     ! First column
         mat(1, 1) = 1.0_dp + (2.0_dp * lambda)
         mat(2, 1) = -1.0_dp * lambda
-        mat(size, 1) = -1.0_dp * lambda
+        mat(len, 1) = -1.0_dp * lambda
 
             ! Central diagonal
         count = 2
@@ -177,12 +178,39 @@ program heat
             mat(count+1, count) = -1.0_dp + lambda
 
             count = count + 1
-            if (count .ge. size-1) exit
+            if (count .ge. len) exit
         end do
 
             ! Last column
         mat(1, count) = -1.0_dp * lambda
         mat(count-1, count) = -1.0_dp * lambda
         mat(count, count) = 1.0_dp + (2.0_dp * lambda)
+
+        call invert_matrix(mat)
     end if
+
+    contains
+        subroutine invert_matrix(matrix)! Invert the supplied matrix using LAPACK
+            implicit none
+
+            real(kind=dp),allocatable, dimension(:,:), intent(inout) :: matrix(:,:)
+            integer :: N, LWORK, IERR
+            integer, dimension(:), allocatable :: IPIV
+            real(kind=dp), dimension(:), allocatable :: WORK
+            
+            if (size(matrix, 1) .ne. size(matrix, 2)) STOP "Matrix is not square"
+            N = size(matrix, 1)
+            allocate(IPIV(N),stat=IERR)
+            if (IERR/=0) STOP "Failed to allocate IPIV"
+            LWORK = N**2
+            allocate(WORK(LWORK),stat=IERR)
+            if (IERR/=0) STOP "Failed to allocate WORK"
+
+            call dgetrf(N,N,matrix,N,IPIV,IERR)
+            if (IERR/=0) STOP "Error in dgetrf: Matrix is singular"
+
+            call dgetri(N,matrix,N,IPIV,WORK,LWORK,IERR)
+            if (IERR/=0) STOP "Error in dgetri: Matrix is singular"
+        end subroutine
+
 end program
