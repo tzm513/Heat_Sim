@@ -39,7 +39,5 @@ Thumbs.db
 
 # Non-Code #
 ############
-
-2026-02-27-Note-12-54.xopp
-PDE_v26.pdf
-PDE_v26.xopp
+*.xopp
+*.pdf

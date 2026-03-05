@@ -243,5 +243,4 @@ program heat
             call dgetri(N,matrix,N,IPIV,WORK,LWORK,IERR)
             if (IERR/=0) STOP "Error in dgetri: Matrix is singular"
         end subroutine
-
 end program
