@@ -9,11 +9,11 @@ time = float(length)
 
 data = np.loadtxt("output.txt", unpack=True, skiprows = 1)
 
-x = (np.array(range(data.shape[0]))+1)/length
-y = (np.array(range(data.shape[1]))+1)/time
+x = (np.array(range(data.shape[0]))+1)*length/data.shape[0]
+y = (np.array(range(data.shape[1]))+1)*time/data.shape[1]
 
 print(data.shape)
-contour = plt.contourf(x, y, data.T, cmap = 'hot')
+contour = plt.contourf(x, y, data.T, cmap = 'hot', levels=30)
 plt.colorbar(contour, label='Heat')
 
 plt.xlabel("Position (m)")

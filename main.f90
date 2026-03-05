@@ -19,7 +19,7 @@ program heat
 
         ! Step matrix
     real(kind = dp), allocatable    :: mat(:,:)
-    real(kind = dp)                 :: lambda!, alpha
+    real(kind = dp)                 :: lambda, alpha
 
         ! Loop counter
     integer                         :: count
@@ -42,7 +42,7 @@ program heat
 
         ! System state array (real(kind=dp))
     do
-        write(*,*) "Would you like to adjust the size of the state array? Default is 10 positions over 0.5m"
+        write(*,*) "Would you like to adjust the size of the state array? Default is 100 positions over 1m"
         read(*,'(A)', iostat = ierr, iomsg = errmsg) u_input
         if ((ierr .eq. 0) .and. (index('yY', u_input) .ne. 0)) then
 
@@ -81,7 +81,7 @@ program heat
         else if ((ierr .eq. 0) .and. (index('nN', u_input) .ne. 0)) then
 
                 ! Default values
-            len = 10
+            len = 100
             allocate(u(len))
             allocate(mat(len, len))
             mat = 0
@@ -91,7 +91,7 @@ program heat
                 u(count) = gen_uniform_random()
                 if (count .eq. len) exit
             end do
-            width = 0.5_dp
+            width = 1.0_dp
             dx = width/real(len, kind = dp)
             exit
         end if
@@ -102,7 +102,7 @@ program heat
     do
         write(*,*) "Would you like to adjust the timestep and target time? Default is a step of 0.01 seconds,&
             ! Line truncated
-        & with a final time of 1s"
+        & with a final time of 120s"
         read(*,'(A)', iostat = ierr, iomsg = errmsg) u_input
         if ((ierr .eq. 0) .and. (index('yY', u_input) .ne. 0)) then
 
@@ -128,33 +128,32 @@ program heat
 
                 ! Default values
             dt = 0.01_dp
-            target_t = 1.0_dp
+            target_t = 120.0_dp
             exit
         end if
         write(*,*) "Please return Y/N"
     end do
 
-    !do
-    !    write(*,*) "Would you like to adjust the thermal permittivity of the system? Default is 0.2"
-    !    read(*,'(A)', iostat = ierr, iomsg = errmsg) u_input
-    !    if ((ierr .eq. 0) .and. (index('Yy', u_input) .ne. 0)) then
-    !        do
-    !            write(*,*) "What would you like the permittivity to be?"
-    !            read(*,'(F10.10)', iostat = ierr, iomsg = errmsg) alpha
-    !            if ((ierr .eq. 0) .and. (alpha .le. 1.0_dp) .and. (alpha .ge. 0)) exit
-    !            write(*,*) trim(errmsg)
-    !            write(*,*) "Please enter a float between 0 and 1"
-    !        end do
-    !        exit
-    !    else if ((ierr .eq. 0) .and. (index('Nn', u_input) .ne. 0)) then
-    !        alpha = 0.2_dp
-    !        exit
-    !    end if
-    !    write(*,*) trim(errmsg)
-    !    write(*,*) "Please return Y/N"
-    !end do
-    !lambda = alpha * dt / (dx**2)
-    lambda = 0.1
+    do
+        write(*,*) "Would you like to adjust the thermal permittivity of the system? Default is 1E-4"
+        read(*,'(A)', iostat = ierr, iomsg = errmsg) u_input
+        if ((ierr .eq. 0) .and. (index('Yy', u_input) .ne. 0)) then
+            do
+                write(*,*) "What would you like the permittivity to be?"
+                read(*,'(F10.10)', iostat = ierr, iomsg = errmsg) alpha
+                if ((ierr .eq. 0) .and. (alpha .le. 1.0_dp) .and. (alpha .ge. 0)) exit
+                write(*,*) trim(errmsg)
+                write(*,*) "Please enter a float between 0 and 1"
+            end do
+            exit
+        else if ((ierr .eq. 0) .and. (index('Nn', u_input) .ne. 0)) then
+            alpha = 1.0E-4_dp
+            exit
+        end if
+        write(*,*) trim(errmsg)
+        write(*,*) "Please return Y/N"
+    end do
+    lambda = alpha * dt / (dx**2)
 
         ! Set up timestep matrix
     do
@@ -186,7 +185,6 @@ program heat
         mat(1, count) = lambda
         mat(count-1, count) = lambda
         mat(count, count) = 1.0_dp - (2.0_dp * lambda)
-        print*,mat
         ! Backwards time-step
     else if (index('Bb', u_input) .ne. 0) then
 
