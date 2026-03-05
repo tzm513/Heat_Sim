@@ -24,6 +24,9 @@ program heat
         ! Loop counter
     integer                         :: count
 
+        ! File store
+    integer                         :: unit
+
         ! ################
         ! Setup Random Gen
         ! ################
@@ -95,7 +98,7 @@ program heat
     do
         write(*,*) "Would you like to adjust the timestep and target time? Default is a step of 0.01 seconds,&
             ! Line truncated
-        & with a final time of 20s"
+        & with a final time of 2s"
         read(*,'(A)', iostat = ierr, iomsg = errmsg) u_input
         if ((ierr .eq. 0) .and. (index('yY', u_input) .ne. 0)) then
 
@@ -121,7 +124,7 @@ program heat
 
                 ! Default values
             dt = 0.01_dp
-            target_t = 20.0_dp
+            target_t = 2.0_dp
             exit
         end if
         write(*,*) "Please return Y/N"
@@ -211,18 +214,25 @@ program heat
     ! File Management
     ! ###############
 
+    unit = newunit()
+    open(unit=unit, file="output.txt", action="write", iostat=ierr, iomsg=errmsg)
+    if (ierr .ne. 0) then
+        write(*,*) trim(errmsg)
+        stop
+    end if
+
         ! System evolution loop
     t = 0
     do
         t = t + dt
         u = matmul(mat, u)
 
-        if (abs(t - int(t)) .lt. dt) then
-            write(*,*) u
-        end if
+        write(unit,*) u
 
         if (t .ge. target_t) exit
     end do
+
+    close(unit)
 
     contains
         subroutine invert_matrix(matrix)! Invert the supplied matrix using LAPACK
@@ -247,4 +257,34 @@ program heat
             call dgetri(N,matrix,N,IPIV,WORK,LWORK,IERR)
             if (IERR/=0) STOP "Error in dgetri: Matrix is singular"
         end subroutine
+
+        function newunit(unit)
+
+            integer, optional   :: unit
+            integer             :: newunit
+            logical             :: opened
+
+                ! Start from given unit if supplied, else default to 10
+            if (present(unit)) then
+                newunit = unit
+            else
+                newunit = 10
+            end if
+
+            do
+                    ! Iterate through units
+                newunit = newunit + 1
+                inquire(unit = newunit, opened = opened)
+
+                    ! Leave loop if unit is unopened
+                if (.not. opened) exit
+                    ! Leave loop if all units are occupied
+                if (newunit .ge. 100) exit
+            end do
+
+                ! Return -1 if all options 10-99 are opened
+            if (newunit .ge. 100) newunit = -1
+
+            return
+        end function
 end program
