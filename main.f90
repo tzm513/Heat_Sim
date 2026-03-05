@@ -31,9 +31,9 @@ program heat
     call init_random(0)
 
 
-        ! #######################
-        ! # Initialising Arrays #
-        ! #######################
+        ! ###############
+        ! # User Inputs #
+        ! ###############
 
         ! System state array (real(kind=dp))
     do
@@ -206,6 +206,10 @@ program heat
 
         call invert_matrix(mat)
     end if
+
+    ! ###############
+    ! File Management
+    ! ###############
 
         ! System evolution loop
     t = 0
