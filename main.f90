@@ -1,4 +1,6 @@
 program heat
+    use random
+
     implicit none
     integer, parameter              :: dp = selected_real_kind(15, 300)
 
@@ -22,13 +24,20 @@ program heat
         ! Loop counter
     integer                         :: count
 
+        ! ################
+        ! Setup Random Gen
+        ! ################
+
+    call init_random(0)
+
+
         ! #######################
         ! # Initialising Arrays #
         ! #######################
 
         ! System state array (real(kind=dp))
     do
-        write(*,*) "Would you like to adjust the size of the state array? Default is 100 positions over 0.5m"
+        write(*,*) "Would you like to adjust the size of the state array? Default is 10 positions over 0.5m"
         read(*,'(A)', iostat = ierr, iomsg = errmsg) u_input
         if ((ierr .eq. 0) .and. (index('yY', u_input) .ne. 0)) then
 
@@ -39,7 +48,12 @@ program heat
                 if (ierr .eq. 0) then
                     allocate(u(len))
                     allocate(mat(len, len))
-                    u = 0
+                    count = 0
+                    do
+                        count = count + 1
+                        u(count) = gen_uniform_random()
+                        if (count .eq. len) exit
+                    end do
                     exit
                 end if
                 write(*,*) trim(errmsg)
@@ -61,10 +75,15 @@ program heat
         else if ((ierr .eq. 0) .and. (index('nN', u_input) .ne. 0)) then
 
                 ! Default values
-            len = 5
+            len = 10
             allocate(u(len))
             allocate(mat(len, len))
-            u = 0
+            count = 0
+            do
+                count = count + 1
+                u(count) = gen_uniform_random()
+                if (count .eq. len) exit
+            end do
             width = 0.5_dp
             dx = width/real(len, kind = dp)
             exit
@@ -76,7 +95,7 @@ program heat
     do
         write(*,*) "Would you like to adjust the timestep and target time? Default is a step of 0.01 seconds,&
             ! Line truncated
-        & with a final time of 10s"
+        & with a final time of 20s"
         read(*,'(A)', iostat = ierr, iomsg = errmsg) u_input
         if ((ierr .eq. 0) .and. (index('yY', u_input) .ne. 0)) then
 
@@ -102,7 +121,7 @@ program heat
 
                 ! Default values
             dt = 0.01_dp
-            target_t = 10.0_dp
+            target_t = 20.0_dp
             exit
         end if
         write(*,*) "Please return Y/N"
@@ -127,7 +146,8 @@ program heat
         write(*,*) trim(errmsg)
         write(*,*) "Please return Y/N"
     end do
-    lambda = alpha * dt / (dx*2.0_dp)
+    lambda = alpha * dt / (dx**2)
+    write(*,*) lambda
 
         ! Set up timestep matrix
     do
@@ -152,7 +172,7 @@ program heat
             mat(count+1, count) = lambda
 
             count = count + 1
-            if (count .ge. len-1) exit
+            if (count .ge. len) exit
         end do
 
             ! Last column
@@ -192,7 +212,7 @@ program heat
     do
         t = t + dt
         u = matmul(mat, u)
-        
+
         if (abs(t - int(t)) .lt. dt) then
             write(*,*) u
         end if
