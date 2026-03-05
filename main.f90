@@ -73,8 +73,6 @@ program heat
         write(*,*) "Please enter Y/N"
     end do
 
-        ! Start at time 0
-    t = 0
     do
         write(*,*) "Would you like to adjust the timestep and target time? Default is a step of 0.01 seconds,&
             ! Line truncated
@@ -188,6 +186,19 @@ program heat
 
         call invert_matrix(mat)
     end if
+
+        ! System evolution loop
+    t = 0
+    do
+        t = t + dt
+        u = matmul(mat, u)
+        
+        if (abs(t - int(t)) .lt. dt) then
+            write(*,*) u
+        end if
+
+        if (t .ge. target_t) exit
+    end do
 
     contains
         subroutine invert_matrix(matrix)! Invert the supplied matrix using LAPACK
