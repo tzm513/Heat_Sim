@@ -31,7 +31,7 @@ program heat
         ! Setup Random Gen
         ! ################
 
-    call init_random(0)
+    call init_random()
 
 
         ! ###############
@@ -53,6 +53,7 @@ program heat
                 if (ierr .eq. 0) then
                     allocate(u(len))
                     allocate(mat(len, len))
+                    mat = 0
                     count = 0
                     do
                         count = count + 1
@@ -83,6 +84,7 @@ program heat
             len = 10
             allocate(u(len))
             allocate(mat(len, len))
+            mat = 0
             count = 0
             do
                 count = count + 1
@@ -184,7 +186,7 @@ program heat
         mat(1, count) = lambda
         mat(count-1, count) = lambda
         mat(count, count) = 1.0_dp - (2.0_dp * lambda)
-
+        print*,mat
         ! Backwards time-step
     else if (index('Bb', u_input) .ne. 0) then
 
@@ -234,7 +236,7 @@ program heat
     do
         t = t + dt
         u = matmul(mat, u)
-        
+
         write(unit,*) u
 
         if (t .ge. target_t) exit
