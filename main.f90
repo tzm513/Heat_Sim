@@ -127,27 +127,27 @@ program heat
         write(*,*) "Please return Y/N"
     end do
 
-    do
-        write(*,*) "Would you like to adjust the thermal permittivity of the system? Default is 0.2"
-        read(*,'(A)', iostat = ierr, iomsg = errmsg) u_input
-        if ((ierr .eq. 0) .and. (index('Yy', u_input) .ne. 0)) then
-            do
-                write(*,*) "What would you like the permittivity to be?"
-                read(*,'(F10.10)', iostat = ierr, iomsg = errmsg) alpha
-                if ((ierr .eq. 0) .and. (alpha .le. 1.0_dp) .and. (alpha .ge. 0)) exit
-                write(*,*) trim(errmsg)
-                write(*,*) "Please enter a float between 0 and 1"
-            end do
-            exit
-        else if ((ierr .eq. 0) .and. (index('Nn', u_input) .ne. 0)) then
-            alpha = 0.2_dp
-            exit
-        end if
-        write(*,*) trim(errmsg)
-        write(*,*) "Please return Y/N"
-    end do
-    lambda = alpha * dt / (dx**2)
-    write(*,*) lambda
+    !do
+    !    write(*,*) "Would you like to adjust the thermal permittivity of the system? Default is 0.2"
+    !    read(*,'(A)', iostat = ierr, iomsg = errmsg) u_input
+    !    if ((ierr .eq. 0) .and. (index('Yy', u_input) .ne. 0)) then
+    !        do
+    !            write(*,*) "What would you like the permittivity to be?"
+    !            read(*,'(F10.10)', iostat = ierr, iomsg = errmsg) alpha
+    !            if ((ierr .eq. 0) .and. (alpha .le. 1.0_dp) .and. (alpha .ge. 0)) exit
+    !            write(*,*) trim(errmsg)
+    !            write(*,*) "Please enter a float between 0 and 1"
+    !        end do
+    !        exit
+    !    else if ((ierr .eq. 0) .and. (index('Nn', u_input) .ne. 0)) then
+    !        alpha = 0.2_dp
+    !        exit
+    !    end if
+    !    write(*,*) trim(errmsg)
+    !    write(*,*) "Please return Y/N"
+    !end do
+    !lambda = alpha * dt / (dx**2)
+    lambda = 0.4
 
         ! Set up timestep matrix
     do
