@@ -19,7 +19,7 @@ program heat
 
         ! Step matrix
     real(kind = dp), allocatable    :: mat(:,:)
-    real(kind = dp)                 :: alpha, lambda
+    real(kind = dp)                 :: lambda!, alpha
 
         ! Loop counter
     integer                         :: count
@@ -37,6 +37,8 @@ program heat
         ! ###############
         ! # User Inputs #
         ! ###############
+
+    write(*,*) "Ensure for whole number inputs, to inclue X.0"
 
         ! System state array (real(kind=dp))
     do
@@ -98,7 +100,7 @@ program heat
     do
         write(*,*) "Would you like to adjust the timestep and target time? Default is a step of 0.01 seconds,&
             ! Line truncated
-        & with a final time of 2s"
+        & with a final time of 1s"
         read(*,'(A)', iostat = ierr, iomsg = errmsg) u_input
         if ((ierr .eq. 0) .and. (index('yY', u_input) .ne. 0)) then
 
@@ -124,7 +126,7 @@ program heat
 
                 ! Default values
             dt = 0.01_dp
-            target_t = 2.0_dp
+            target_t = 1.0_dp
             exit
         end if
         write(*,*) "Please return Y/N"
@@ -150,7 +152,7 @@ program heat
     !    write(*,*) "Please return Y/N"
     !end do
     !lambda = alpha * dt / (dx**2)
-    lambda = 0.4
+    lambda = 0.1
 
         ! Set up timestep matrix
     do
@@ -210,9 +212,9 @@ program heat
         call invert_matrix(mat)
     end if
 
-    ! ###############
-    ! File Management
-    ! ###############
+        ! ###############
+        ! File Management
+        ! ###############
 
     unit = newunit()
     open(unit=unit, file="output.txt", action="write", iostat=ierr, iomsg=errmsg)
@@ -221,12 +223,18 @@ program heat
         stop
     end if
 
-        ! System evolution loop
+    write(unit,*) width, ',', target_t
+
+        ! ################
+        ! System Evolution
+        ! ################
+
+    write(unit,*) u
     t = 0
     do
         t = t + dt
         u = matmul(mat, u)
-
+        
         write(unit,*) u
 
         if (t .ge. target_t) exit

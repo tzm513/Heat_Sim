@@ -4,8 +4,8 @@ module random
     integer, parameter :: dp = selected_real_kind(15, 300)
     integer :: A = 100, B = 104001, M = 714025, current_rand
     logical :: rand_init = .false.
-    real(kind = dp) :: sigma = 1, y_bar = 0, pi = 3.14159
-    private :: dp, A, B, M, current_rand, rand_init
+    real(kind = dp) :: sigma = 1.0_dp, y_bar = 0.0_dp, pi = 3.14159_dp
+    private :: dp, A, B, M, current_rand, rand_init, sigma, y_bar, pi
 
     contains
 
@@ -27,21 +27,21 @@ module random
         rand_init = .true.
     end subroutine
 
-    
         ! Initialises seed if uninitialised, then iterates the random sequence
     function gen_uniform_random() result(out)
         implicit none
         real (kind = dp) :: out
 
             ! Check if a seed has been generated, and generate one if not
-        if (.not. rand_init) call init_random()
+        if (.not. rand_init) then 
+            call init_random()
+        end if
 
             ! Update current_rand with the next value in the sequence
         current_rand = mod((A * current_rand) + B, M)
 
             ! Scales the output to be (0 .le. out .lt. 1)
-        out = current_rand / real(M, kind = dp)
-        return
+        out = real(current_rand, kind = dp) / real(M, kind = dp)
     end function
 
     function gen_box_muller() result(out)
