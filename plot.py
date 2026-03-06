@@ -14,8 +14,8 @@ y = (np.array(range(data.shape[1]))+1)*time/data.shape[1]
 
     # Extract data on heat sums
 sums = data[data.shape[0]-1, :]
-sums = sums / sums.shape
 data = data[:data.shape[0]-1, :data.shape[1]]
+sums = sums / data.shape[0]
 
     # Plot heat at position by time
 plt.subplot(121)
