@@ -100,7 +100,7 @@ program heat
     end do
 
     do
-        write(*,*) "Would you like to adjust the timestep and target time? Default is a step of 0.01 seconds,&
+        write(*,*) "Would you like to adjust the timestep and target time? Default is a step of 0.1 seconds,&
             ! Line truncated
         & with a final time of 120s"
         read(*,'(A)', iostat = ierr, iomsg = errmsg) u_input
@@ -229,13 +229,13 @@ program heat
         ! System Evolution
         ! ################
 
-    write(unit,*) u
+    write(unit,*) u, sum(u)
     t = 0
     do
         t = t + dt
         u = matmul(mat, u)
 
-        write(unit,*) u
+        write(unit,*) u, sum(u)
 
         if (t .ge. target_t) exit
     end do
