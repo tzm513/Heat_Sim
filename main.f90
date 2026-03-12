@@ -188,8 +188,8 @@ program heat
         ! Backwards time-step
     else if (index('Bb', u_input) .ne. 0) then
 
-                    ! First column
-        mat(1, 1) = 1.0_dp + (2.0_dp * lambda)
+            ! First column
+        mat(1, 1) = 1.0_dp + 2.0_dp*lambda
         mat(2, 1) = -1.0_dp * lambda
         mat(len, 1) = -1.0_dp * lambda
 
@@ -198,16 +198,16 @@ program heat
         do
             mat(count-1, count) = -1.0_dp * lambda
             mat(count, count) = 1.0_dp + (2.0_dp * lambda)
-            mat(count+1, count) = -1.0_dp + lambda
+            mat(count+1, count) = -1.0_dp * lambda
 
             count = count + 1
             if (count .ge. len) exit
         end do
 
             ! Last column
-        mat(1, count) = -1.0_dp * lambda
-        mat(count-1, count) = -1.0_dp * lambda
-        mat(count, count) = 1.0_dp + (2.0_dp * lambda)
+        mat(len, len) = 1.0_dp + 2.0_dp*lambda
+        mat(len-1, len) = -1.0_dp * lambda
+        mat(1, len) = -1.0_dp * lambda
 
         call invert_matrix(mat)
     end if
