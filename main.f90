@@ -31,7 +31,7 @@ program heat
         ! Setup Random Gen
         ! ################
 
-    call init_random()
+    call init_random(0)
 
 
         ! ###############
@@ -102,7 +102,7 @@ program heat
     end do
 
     do
-        write(*,*) "Would you like to adjust the timestep and target time? Default is a step of 0.1 seconds,&
+        write(*,*) "Would you like to adjust the timestep and target time? Default is a step of 0.01 seconds,&
             ! Line truncated
         & with a final time of 120s"
         read(*,'(A)', iostat = ierr, iomsg = errmsg) u_input
