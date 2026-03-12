@@ -164,7 +164,7 @@ program heat
         write(*,*) "Please enter FTCS or BTCS"
     end do
 
-    call init_heats(u, .false., 0.2_dp)
+    call init_heats(u, .false., 0.35_dp)
     call init_transformation(mat, lambda, u_input, '')
     call init_heatsinks(sinks, 1.0_dp, 0.0_dp)
 
@@ -189,8 +189,8 @@ program heat
     t = 0
     do
         t = t + dt
-        u = matmul(mat, u)
         u = u + (lambda * sinks)
+        u = matmul(mat, u)
 
         write(unit,*) u, sum(u)
 
