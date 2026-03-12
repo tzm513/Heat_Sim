@@ -33,7 +33,6 @@ program heat
 
     call init_random(0)
 
-
         ! ###############
         ! # User Inputs #
         ! ###############
@@ -259,14 +258,16 @@ program heat
             character(*) :: timedir, boundary
             real(kind=dp) :: val_diag, val_tridiag
 
+            mat = 0
+
             length = size(mat, 1)
 
                 ! Initialise variables based on FTCS or BTCS
-            if (index('Ff', timedir(0)) .ne. 0) then
-                val_diag = 1.0_dp - 2.0_dp * lambda
+            if (index('Ff', timedir) .ne. 0) then
+                val_diag = 1.0_dp - (2.0_dp * lambda)
                 val_tridiag = lambda
-            else if (index('Bb', timedir(0)) .ne. 0) then
-                val_diag = 1.0_dp + 2.0_dp * lambda
+            else if (index('Bb', timedir) .ne. 0) then
+                val_diag = 1.0_dp + (2.0_dp * lambda)
                 val_tridiag = -1.0_dp * lambda
             else
                 write(*,*) 'Invalid input for FTCS/BTCS when initialising transformation matrix'
@@ -283,17 +284,17 @@ program heat
             do
                 mat(count-1, count) = val_tridiag
                 mat(count, count) = val_diag
-                mat(count+1, count) = lambda
+                mat(count+1, count) = val_tridiag
 
                 count = count + 1
                 if (count .ge. len) exit
             end do
 
                 ! Last column
+            mat(count-1, count) = val_tridiag
+            mat(count, count) = val_diag
             if (boundary .eq. 'periodic') mat(1, count) = val_tridiag
-            mat(count-1, count) = val_diag
-            mat(count, count) = val_tridiag
 
-            if (index('Bb', timedir(0)) .ne. 0) call invert_matrix(mat)
+            if (index('Bb', timedir) .ne. 0) call invert_matrix(mat)
         end subroutine
 end program
