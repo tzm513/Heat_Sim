@@ -38,7 +38,9 @@ program heat
         ! # User Inputs #
         ! ###############
 
-    write(*,*) "Ensure for whole number inputs, to inclue X.0"
+    write(*,*) "Ensure for whole number inputs which would not always be integers, &
+        ! Line truncated
+    &to include X.0 (e.g. 1 metre should be written as 1.0 metres)"
 
         ! System state array (real(kind=dp))
     do
