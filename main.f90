@@ -11,6 +11,7 @@ program heat
     
         ! State array
     real(kind = dp), allocatable    :: u(:)
+    real(kind = dp), allocatable    :: sinks(:)
     integer                         :: len
     real(kind = dp)                 :: width, dx
 
@@ -53,14 +54,11 @@ program heat
                 read(*,'(I10)', iostat = ierr, iomsg = errmsg) len
                 if (ierr .eq. 0) then
                     allocate(u(len))
+                    allocate(sinks(len))
                     allocate(mat(len, len))
                     mat = 0
+                    sinks = 0
                     count = 0
-                    do
-                        count = count + 1
-                        u(count) = gen_uniform_random()
-                        if (count .eq. len) exit
-                    end do
                     exit
                 end if
                 write(*,*) trim(errmsg)
@@ -84,8 +82,10 @@ program heat
                 ! Default values
             len = 100
             allocate(u(len))
+            allocate(sinks(len))
             allocate(mat(len, len))
             mat = 0
+            sinks = 0
             count = 0
             do
                 count = count + 1
@@ -164,7 +164,9 @@ program heat
         write(*,*) "Please enter FTCS or BTCS"
     end do
 
-    call init_transformation(mat, lambda, u_input, 'periodic')
+    call init_heats(u, random = .false.)
+    call init_transformation(mat, lambda, u_input, '')
+    call init_heatsinks(sinks, 1.0_dp, 0.0_dp)
 
         ! ###############
         ! File Management
@@ -188,6 +190,7 @@ program heat
     do
         t = t + dt
         u = matmul(mat, u)
+        u = u + (lambda * sinks)
 
         write(unit,*) u, sum(u)
 
@@ -251,12 +254,27 @@ program heat
         end function
 
 
+        subroutine init_heats(u, random)
+            real(kind=dp), allocatable  :: u(:)
+            logical                     :: random
+
+            u = 0
+            if (random) then
+                do
+                    count = count + 1
+                    u(count) = gen_uniform_random()
+                    if (count .eq. len) exit
+                end do
+            end if
+        end subroutine
+
+
         subroutine init_transformation(mat, lambda, timedir, boundary)
-            real(kind=dp), allocatable :: mat(:, :)
-            real(kind=dp) :: lambda
-            integer :: length
-            character(*) :: timedir, boundary
-            real(kind=dp) :: val_diag, val_tridiag
+            real(kind=dp), allocatable  :: mat(:, :)
+            real(kind=dp)               :: lambda
+            integer                     :: length
+            character(*)                :: timedir, boundary
+            real(kind=dp)               :: val_diag, val_tridiag
 
             mat = 0
 
@@ -296,5 +314,16 @@ program heat
             if (boundary .eq. 'periodic') mat(1, count) = val_tridiag
 
             if (index('Bb', timedir) .ne. 0) call invert_matrix(mat)
+        end subroutine
+
+        subroutine init_heatsinks(sinks, hot, cold)
+            real(kind=dp), allocatable  :: sinks(:)
+            real(kind=dp)               :: hot, cold
+            integer                     :: length
+
+                ! Places a heat source on the left and heat sink on the right
+            length = size(sinks, 1)
+            sinks(1) = hot
+            sinks(length) = cold
         end subroutine
 end program
