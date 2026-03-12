@@ -7,7 +7,7 @@ program heat
         ! Inputs and Error Checking
     character(len=1)                :: u_input
     integer                         :: ierr
-    character(len=50)               :: errmsg
+    character(len=50)               :: errmsg = ''
     
         ! State array
     real(kind = dp), allocatable    :: u(:)
@@ -31,7 +31,7 @@ program heat
         ! Setup Random Gen
         ! ################
 
-    call init_random()
+    call init_random(0)
 
 
         ! ###############
@@ -102,7 +102,7 @@ program heat
     end do
 
     do
-        write(*,*) "Would you like to adjust the timestep and target time? Default is a step of 0.1 seconds,&
+        write(*,*) "Would you like to adjust the timestep and target time? Default is a step of 0.01 seconds,&
             ! Line truncated
         & with a final time of 120s"
         read(*,'(A)', iostat = ierr, iomsg = errmsg) u_input
@@ -164,55 +164,8 @@ program heat
         if ((ierr .eq. 0) .and. (index('FfBb', u_input) .ne. 0)) exit
         write(*,*) "Please enter FTCS or BTCS"
     end do
-        ! Forwards time-step
-    if (index('Ff', u_input) .ne. 0) then
 
-            ! First column
-        mat(1, 1) = 1.0_dp - (2.0_dp * lambda)
-        mat(2, 1) = lambda
-        mat(len, 1) = lambda
-
-            ! Central diagonal
-        count = 2
-        do
-            mat(count-1, count) = lambda
-            mat(count, count) = 1.0_dp - (2.0_dp * lambda)
-            mat(count+1, count) = lambda
-
-            count = count + 1
-            if (count .ge. len) exit
-        end do
-
-            ! Last column
-        mat(1, count) = lambda
-        mat(count-1, count) = lambda
-        mat(count, count) = 1.0_dp - (2.0_dp * lambda)
-        ! Backwards time-step
-    else if (index('Bb', u_input) .ne. 0) then
-
-            ! First column
-        mat(1, 1) = 1.0_dp + 2.0_dp*lambda
-        mat(2, 1) = -1.0_dp * lambda
-        mat(len, 1) = -1.0_dp * lambda
-
-            ! Central diagonal
-        count = 2
-        do
-            mat(count-1, count) = -1.0_dp * lambda
-            mat(count, count) = 1.0_dp + (2.0_dp * lambda)
-            mat(count+1, count) = -1.0_dp * lambda
-
-            count = count + 1
-            if (count .ge. len) exit
-        end do
-
-            ! Last column
-        mat(len, len) = 1.0_dp + 2.0_dp*lambda
-        mat(len-1, len) = -1.0_dp * lambda
-        mat(1, len) = -1.0_dp * lambda
-
-        call invert_matrix(mat)
-    end if
+    call init_transformation(mat, lambda, u_input, 'periodic')
 
         ! ###############
         ! File Management
@@ -297,4 +250,50 @@ program heat
 
             return
         end function
+
+
+        subroutine init_transformation(mat, lambda, timedir, boundary)
+            real(kind=dp), allocatable :: mat(:, :)
+            real(kind=dp) :: lambda
+            integer :: length
+            character(*) :: timedir, boundary
+            real(kind=dp) :: val_diag, val_tridiag
+
+            length = size(mat, 1)
+
+                ! Initialise variables based on FTCS or BTCS
+            if (index('Ff', timedir(0)) .ne. 0) then
+                val_diag = 1.0_dp - 2.0_dp * lambda
+                val_tridiag = lambda
+            else if (index('Bb', timedir(0)) .ne. 0) then
+                val_diag = 1.0_dp + 2.0_dp * lambda
+                val_tridiag = -1.0_dp * lambda
+            else
+                write(*,*) 'Invalid input for FTCS/BTCS when initialising transformation matrix'
+                error stop
+            end if
+
+                ! First column
+            mat(1, 1) = val_diag
+            mat(2, 1) = val_tridiag
+            if (boundary .eq. 'periodic') mat(len, 1) = val_tridiag
+
+                ! Central diagonal
+            count = 2
+            do
+                mat(count-1, count) = val_tridiag
+                mat(count, count) = val_diag
+                mat(count+1, count) = lambda
+
+                count = count + 1
+                if (count .ge. len) exit
+            end do
+
+                ! Last column
+            if (boundary .eq. 'periodic') mat(1, count) = val_tridiag
+            mat(count-1, count) = val_diag
+            mat(count, count) = val_tridiag
+
+            if (index('Bb', timedir(0)) .ne. 0) call invert_matrix(mat)
+        end subroutine
 end program
